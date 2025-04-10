@@ -1,4 +1,4 @@
-.signup {
+.login {
   width: 100vw;
   height: 100vh;
   position: relative; /* Ensure positioning for the pseudo-element */
@@ -45,18 +45,17 @@
     background-color: #c0c0c0;
   }
 }
-  
-  .signup::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('forestshadow.png') no-repeat center center;
-    background-size: 100%;
-    opacity: 0.2; /* 50% transparency */
-    z-index: 0; /* Ensure it stays behind other elements */
-    background-position: cover;
-  }
+
+.login::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('forestshadow.png') no-repeat center center;
+  background-size: cover;
+  opacity: 0.2; /* 50% transparency */
+  z-index: 0; /* Ensure it stays behind other elements */
+  background-position: cover;
+}
