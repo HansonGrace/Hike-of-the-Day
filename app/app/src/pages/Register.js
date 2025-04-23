@@ -18,6 +18,7 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [nameVar, setNameVar] = useState('');
   const [bio, setBio] = useState('No Bio');
+  const [img, setImg] = useState('/default pfp.jpg');
   const navigate = useNavigate();
   const API_URL = process.env.REACT_APP_BACKEND_API_URL; // Fallback for local development
   /**
@@ -30,13 +31,13 @@ const Register = () => {
     try { 
       const response = await axios.post(
         API_URL + '/auth/register',
-        { username, password, bio, nameVar },
+        { username, password, bio, nameVar, img },
         { withCredentials: true }
       );
 
       if (response.data.message === 'User registered successfully') {
         alert('Registration successful');
-        navigate('/map'); // Navigate to map page after registration
+        navigate('/login'); // Navigate to map page after registration
       }
     } catch (error) {
       console.error('Registration failed:', error);
@@ -68,7 +69,7 @@ const Register = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
           <div className="buttons">
-          <button type="button" id="back" onClick={() => navigate('/')}>Back</button>
+          <button type="button" onClick={() => navigate('/')}>Back</button>
           <button type="submit">Register</button>
           </div>
         </form>

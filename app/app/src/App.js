@@ -15,6 +15,8 @@ import Profile from './pages/profile/profile';
 import Home from './pages/home/home';
 import Edit from './pages/edit/edit';
 import LoginToView from './pages/loginToView/loginToView';
+import FriendRequests from './pages/friendRequests/FriendRequests';
+import NotFound from './pages/notFound/notFound'
 
 /**
  * Main application component that manages routes and authentication state.
@@ -41,11 +43,13 @@ function App() {
         <Route path="/home"element={<Home/>}/>
         <Route path="/login" element={authenticated ? (<Navigate to="/map" replace />) : (<Login setAuthenticated={setAuthenticated} />)}/>
         <Route path="/friends_list" element={<FriendsList />}/>
+        <Route path="/friend-requests" element={<FriendRequests />} />
         <Route path="/profile" element={!authenticated ? (<Navigate to="/loginToView" replace />) : (<Profile />)}/> 
         <Route path="/edit" element={<Edit />}/>
-        <Route path="/register" element={authenticated ? (<Navigate to="/map" replace />) : (<Register setAuthenticated={setAuthenticated}/>)}/>
+        <Route path="/register" element={authenticated ? (<Navigate to="/map" replace />) : (<Register />)}/>
         <Route path="/map" element={<Map setAuthenticated={setAuthenticated} />}/>
         <Route path="/loginToView" element={<LoginToView />} />
+        <Route path='*' element={<NotFound/>}/>
       </Routes>
     </Router>
   );

@@ -15,7 +15,6 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-/* Sets properties for the icon layer */
 const userIcon = L.icon({
     iconUrl: markerIcon,
     iconRetinaUrl: markerIcon2x,
@@ -26,20 +25,9 @@ const userIcon = L.icon({
     shadowSize: [41, 41],
 });
 
-/*  Sets center to Morgantown*/
 const defaultCenter = [39.6295, -79.9559];
 
-/*@param setPosition is the position that we are setting from user location
-
-Const map- sets up event listeners for the map, zooming in on the correct location
-@param e is the location that is returned by leaflet
-locationfound is triggered when leaflet finds the user location
-locationerror happens if leaflet returns an error
-useEffect sets the map view to center on the user location
-
- */
 function LocationHandler({ setPosition }) {
-
     const map = useMapEvents({
         locationfound(e) {
             setPosition(e.latlng);
@@ -48,10 +36,7 @@ function LocationHandler({ setPosition }) {
         locationerror(e) {
             alert(`Unable to determine location: ${e.message}`);
         },
-
-
     });
-
 
     useEffect(() => {
         map.locate({ setView: true, timeout: 20000 });
@@ -60,19 +45,10 @@ function LocationHandler({ setPosition }) {
     return null;
 }
 
-
-
-
 function Map() {
-    /* 
-  
-    sets state of the position and state to null 
-    useEffect sets trails to null 
-    then the response is sent, and then the data is pulled and is set
-    @catch throws error if data doesn't show up
-    */
     const [position, setPosition] = useState(null);
     const [geojsonData, setGeojsonData] = useState(null);
+    const [selectedTrail, setSelectedTrail] = useState(null);
 
     useEffect(() => {
         fetch('/data/randomTrailsSelection/trail_lines.geojson')
@@ -80,20 +56,6 @@ function Map() {
             .then((data) => setGeojsonData(data))
             .catch((err) => console.error('GeoJSON load error:', err));
     }, []);
-
-
-
-    //testing python 
-    //  const [message, setMessage] = useState("");
-
-    //  const runPythonScript = async () => {
-    //      const res = await fetch("http://localhost:5000/run-script", {
-    //     method: "POST",
-    //      });
-    //      const data = await res.json();
-    //     setMessage(data.output || data.status);
-
-    //  };
 
     return (
         <div className='map'>
@@ -105,6 +67,7 @@ function Map() {
             <div className='bottom'>
                 <div className='left'>
                     <div className='filters'>
+
                         <div className='filter'>
                             <label htmlFor='filter1'>Filter:</label>
                             <select id='filter1'>
@@ -114,19 +77,29 @@ function Map() {
                                 <option>Longest</option>
                             </select>
                         </div>
-                        <div className='filter'>
-                            <label htmlFor='filter2'>Select Trail:</label>
-                            <select id='filter2'>
-                                <option>Location 1</option>
-                                <option>Location 2</option>
-                                <option>Location 3</option>
-                                <option>Location 4</option>
-                            </select>
-                        </div>
-                    </div>
-                    {/* <button onClick={runPythonScript}>{message}</button>  */}
-                    <div className='stats'>
 
+                        {geojsonData && (
+                            <div className='filter'>
+                                <label htmlFor='trailSelect'>Select Trail:</label>
+                                <select
+                                    id='trailSelect'
+                                    onChange={(e) => setSelectedTrail(parseInt(e.target.value))}
+                                    value={selectedTrail ?? ''}
+                                >
+                                    <option value="" disabled>Select a trail</option>
+                                    {geojsonData.features.map((feature, idx) => (
+                                        <option key={idx} value={idx}>
+                                            {feature.properties.trailName
+                                                ? `${feature.properties.trailName} (${feature.properties.trailLength?.toFixed(2) || "?"} km)`
+                                                : `Trail ${idx + 1} (${feature.properties.trailLength?.toFixed(2) || "?"} km)`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className='stats'>
                         <div className='item'>
                             <img src={rain} className='icon' />
                             <span>% Rain:</span>
@@ -139,8 +112,6 @@ function Map() {
                             <img src={clouds} className='icon' />
                             <span>% Cloud:</span>
                         </div>
-
-
                         <div className='item'>
                             <img src={humidity} className='icon' />
                             <span>Humidity: </span>
@@ -153,19 +124,13 @@ function Map() {
                             <img src={leaf} className='icon' />
                             <span>Pollen:</span>
                         </div>
-
-
                     </div>
                 </div>
+
                 <div className='right' style={{ height: "80vh", width: "70vw" }}>
                     <MapContainer center={defaultCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
-
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         <LocationHandler setPosition={setPosition} />
-
-
 
                         {position && (
                             <Marker position={position} icon={userIcon}>
@@ -173,19 +138,24 @@ function Map() {
                             </Marker>
                         )}
 
-                        {/*displays the geojson data and applies a style on each line*/}
                         {geojsonData && (
                             <GeoJSON
                                 data={geojsonData}
-                                style={() => ({
-                                    color: '#006400',
-                                    weight: 3,
-                                })}
-                                
+                                style={(feature) => {
+                                    const featureIndex = geojsonData.features.findIndex(f => f === feature);
+                                    return {
+                                        color: featureIndex === selectedTrail ? 'red' : '#006400',
+                                        weight: featureIndex === selectedTrail ? 5 : 3,
+                                    };
+                                }}
+                                onEachFeature={(feature, layer) => {
+                                    const featureIndex = geojsonData.features.findIndex(f => f === feature);
+                                    layer.on({
+                                        click: () => setSelectedTrail(featureIndex),
+                                    });
+                                }}
                             />
                         )}
-
-                       
                     </MapContainer>
                 </div>
             </div>
