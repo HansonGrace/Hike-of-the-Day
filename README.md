@@ -53,6 +53,6 @@ This application was built as a **group project** during **CS330 at West Virgini
 
 
 ## 🖼️ Small-Demo of the Project
-(https://youtu.be/ZA0lSyWcj84
+https://youtu.be/ZA0lSyWcj84
 
 
