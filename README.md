@@ -52,8 +52,7 @@ This application was built as a **group project** during **CS330 at West Virgini
 - [Alex Loving](https://github.com/alex-loving)
 
 
-## 🖼️ Small-Demo of the Map
-- Small video display of the Leaflet map trail with filters working 4-25-2025. Database is a work in progress to add trails to the user profile, hence the error. 
-   https://streamable.com/4vae2p
+## 🖼️ Small-Demo of the Project
+(https://youtu.be/ZA0lSyWcj84
 
 
