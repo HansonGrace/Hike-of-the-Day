@@ -10,7 +10,26 @@ function FriendsList() {
   const [noResults, setNoResults] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [friends, setFriends] = useState([]);
+  const [userData, setUserData] = useState({
+    username: '',
+    numOfHikes: 0,
+    bio: 'No Bio Available',
+    nameVar: '',
+    img: null
+  })
   const API_URL = process.env.REACT_APP_BACKEND_API_URL;
+
+  const [alertMessage, setAlertMessage] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+
+  const triggerAlert = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+
+    setTimeout(() => {
+      setShowAlert(false);
+    }, 2500);
+  };
 
   const fetchFriends = async () => {
     try {
@@ -26,14 +45,32 @@ function FriendsList() {
   useEffect(() => {
     fetchFriends();
 
-    // Listen for the custom event to refresh the list
     window.addEventListener("friendsUpdated", fetchFriends);
     return () => window.removeEventListener("friendsUpdated", fetchFriends);
   }, [API_URL]);
 
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const response = await axios.get(API_URL + '/auth/profile', {withCredentials: true});
+        setUserData(response.data);
+      }
+      catch(error) {
+        console.error("Error fetching user data: ", error);
+      }
+    }
+
+    fetchUsername();
+  }, [API_URL])
+
   const handleSearch = async () => {
     if (searchQuery.trim() === "") {
-      alert("Please enter a username to search.");
+      triggerAlert("🔍 Please enter a username to search.");
+      return;
+    }
+
+    if (searchQuery.trim() === userData.username) {
+      triggerAlert("✖️ Cannot search your username.");
       return;
     }
 
@@ -47,24 +84,51 @@ function FriendsList() {
       setNoResults(response.data.length === 0);
     } catch (error) {
       console.error("Error searching users:", error);
-      alert("Failed to fetch user data. Please try again.");
+      triggerAlert("Failed to fetch user data. Please try again.");
     }
   };
 
   const handleSendFriendRequest = async () => {
+    const isAlreadyFriend = friends.some(friend => friend.username === selectedUser.username);
+    if (isAlreadyFriend) {
+      triggerAlert("😊 Already friends with this user.");
+      return;
+    }
+  
     try {
+      //check safe to see if the user has already sent a request to the selected user
+      const sentResponse = await axios.get(`${API_URL}/auth/sent-requests`, { withCredentials: true });
+      const sentRequests = sentResponse.data;
+      const hasAlreadySentRequest = sentRequests.some(req => req.receiver_username === selectedUser.username);
+  
+      if (hasAlreadySentRequest) {
+        triggerAlert("✔️ Friend request already sent!");
+        return;
+      }
+  
+      //sends a post request to the backend to send a friend request to the selected user
       await axios.post(`${API_URL}/auth/send-request`, {
-        receiverId: selectedUser.id,
+        receiverId: selectedUser.id
       }, { withCredentials: true });
+  
       setRequestSent(true);
+      triggerAlert("✔️ Friend request sent!");
     } catch (err) {
       console.error("Error sending request:", err);
-      alert("Failed to send friend request.");
+      triggerAlert("Failed to send friend request.");
     }
   };
+  
+  
 
   return (
     <div className="friends-page">
+      {showAlert && (
+        <div className="custom-alert">
+          {alertMessage}
+        </div>
+      )}
+
       <a href='/profile'><button className='friend-back'>Account</button></a>
 
       <div className="container">
@@ -85,7 +149,13 @@ function FriendsList() {
             friends.map((friend) => (
               <div key={friend.id} className="friend">
                 <div>{friend.username}</div>
-                <button className="view-profile-button">View Profile</button>
+                <button
+                  className="view-profile-button"
+                    onClick={() => window.location.href = `/friend-profile/${friend.id}`}
+                      >     
+                        View Profile
+                                </button>
+
               </div>
             ))
           )}
@@ -138,22 +208,51 @@ function FriendsList() {
         </div>
       )}
 
-      {selectedUser && (
-        <div className="search-popup">
-          <div className="search-popup-content">
-            <h2>{selectedUser.username}</h2>
-            <p>Would you like to add this user as a friend?</p>
-            <button onClick={handleSendFriendRequest}>Add Friend</button>
-            <button onClick={() => setSelectedUser(null)}>Back to Search</button>
+{selectedUser && (
+  <div className="search-popup">
+    <div className="search-popup-content" style={{ position: "relative" }}>
+      {/* Small X button in the corner */}
+      <button
+        onClick={() => {
+          setSelectedUser(null);
+          setRequestSent(false);
+          setShowSearchPopup(false);
+        }}
+        style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          background: "none",
+          border: "none",
+          fontSize: "20px",
+          cursor: "pointer",
+          color: "#888",
+        }}
+      >
+        ×
+      </button>
 
-            {requestSent && (
-              <p style={{ color: "green", marginTop: "10px" }}>
-                Friend request sent!
-              </p>
-            )}
-          </div>
-        </div>
+      {/* Popup content */}
+      <h2>{selectedUser.username}</h2>
+      <p>Would you like to add this user as a friend?</p>
+      {!requestSent ? (
+        <>
+          <button onClick={handleSendFriendRequest}>Send Request</button>
+          <button
+            onClick={() => {
+              setSelectedUser(null);
+            }}
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <p style={{ color: "green" }}>Request sent!</p>
       )}
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

@@ -72,8 +72,9 @@ output = {
     "type": data.get("type", "FeatureCollection"),
     "name": data.get("name", "Lines"),
     "crs": data.get("crs"),
-    "features": sample
+    "features": filtered  # ← instead of sample
 }
+
 
 # Save to new GeoJSON
 fileoutput = os.path.join(base_path, 'trail_lines.geojson')

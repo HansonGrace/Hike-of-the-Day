@@ -13,6 +13,8 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { getClimateData, getTrailClimateData } from './request.js';
 import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const API_URL = process.env.REACT_APP_BACKEND_API_URL;
 
@@ -176,6 +178,12 @@ function SearchableTrailDropdown({ trails, selectedTrail, onTrailSelect }) {
 }
 
 function Map() {
+    const [alertMessage, setAlertMessage] = useState('');
+    const [showAlert, setShowAlert] = useState(false);
+    const [selectedTrailRating, setSelectedTrailRating] = useState(null);
+    const [selectedTrailRatingCount, setSelectedTrailRatingCount] = useState(null);
+
+
     const [position, setPosition] = useState(null);
     const [geojsonData, setGeojsonData] = useState(null);
     const [selectedTrail, setSelectedTrail] = useState(null);
@@ -188,27 +196,110 @@ function Map() {
     const [activeFilter, setActiveFilter] = useState(""); 
     const [status, setStatus] = useState(1);
     const [rating, setRating] = useState(0);
-    
+    const [trailData, setTrailData] = useState(null);
+    const [userData, setUserData] = useState({});
+    const [selectedTrailName, setSelectedTrailName] = useState('');
 
-    const handleStartTrail = async () => {
-        if (selectedTrail !== null) {
-            setShowStartTrailModal(true);
-            setTimeout(() => {
-                setShowStartTrailModal(false);
-            }, 3000);
 
-            try {
-                await axios.post(API_URL + '/auth/upload-trail', 
-                    { status, rating }, 
-                    {withCredentials: true});
-                alert("Trail added to profile.");
-            }
-            catch (error) {
-                alert("Error adding trail to profile.");
-                console.error("Error adding trail to profile: ", error);
-            }
+    //custom trigger alert because the toast thing was not working for some reason
+    //this is a custom alert that will show up for 2.5 seconds when a trail is started
+    const triggerAlert = (message) => {
+        setAlertMessage(message);
+        setShowAlert(true);
+      
+        setTimeout(() => {
+          setShowAlert(false);
+        }, 2500); // disappears after 2.5 seconds
+      };
+      
+      //handles trail click for data pulling
+      const handleTrailClick = (feature) => {
+        const featureIndex = geojsonData.features.findIndex(f => f === feature);
+        if (featureIndex !== -1) {
+          setSelectedTrail(featureIndex);
+          const trailId = geojsonData.features[featureIndex]?.properties?.trail_id;
+          if (trailId) {
+            fetchTrailRating(trailId);
+          }
+          if (feature.properties?.Name) {
+            setSelectedTrailName(feature.properties.Name);
+          } else {
+            setSelectedTrailName('');
+          }
         }
-    };
+      };
+      
+
+      const handleTrailSelect = (trailIdx) => {
+        setSelectedTrail(trailIdx);
+      
+        if (geojsonData?.features?.[trailIdx]) {
+          const trailId = geojsonData.features[trailIdx].properties.trail_id;
+          fetchTrailRating(trailId);
+        }
+      };
+      
+      const fetchTrailRating = async (trailId) => {
+  if (!trailId) {
+    console.warn('Trail ID is undefined, not fetching rating.');
+    return;
+  }
+
+  try {
+    const response = await axios.post(`${API_URL}/auth/fetch-trails`, { trailId }, { withCredentials: true });
+    const trail = response.data;
+
+    if (trail.rating_count > 0) {
+      const avg = trail.total_rating / trail.rating_count;
+      const cleanAvg = Math.round(avg); // <<< round to nearest whole number
+      setSelectedTrailRating(cleanAvg);
+      setSelectedTrailRatingCount(trail.rating_count);
+    } else {
+      setSelectedTrailRating(0);
+      setSelectedTrailRatingCount(0);
+    }
+  } catch (error) {
+    console.error('Error fetching trail rating:', error);
+  }
+};
+
+      
+      
+    
+      const handleStartTrail = async () => {
+        if (selectedTrail === null || !geojsonData?.features?.[selectedTrail]) {
+          triggerAlert('Please select a trail first!');
+          return;
+        }
+      
+        const currentSelectedTrailName = geojsonData.features[selectedTrail].properties.Name || `Trail ${selectedTrail + 1}`;
+      
+        try {
+          const response = await axios.post(`${API_URL}/auth/upload-trail`, {
+            trailName: currentSelectedTrailName,
+            status: 'in-progress',
+          }, { withCredentials: true });
+      
+          //save trailid to memory if backend returns trailid
+          if (response.data.trailId) {
+            geojsonData.features[selectedTrail].properties.trail_id = response.data.trailId;
+          }
+      
+          triggerAlert(`🏞️ Trail "${currentSelectedTrailName}" started!`);
+          await refreshProfileData();
+        } catch (error) {
+          console.error('Error starting new trail:', error);
+          if (error.response && error.response.data.error) {
+            triggerAlert(error.response.data.error);
+          } else {
+            triggerAlert('Failed to start trail.');
+          }
+        }
+      };
+      
+      
+      
+    
 
     useEffect(() => {
         async function fetchClimateData() {
@@ -235,7 +326,46 @@ function Map() {
             .catch((err) => {
                 console.error('GeoJSON load error:', err);
             });
+
     }, []);
+
+    useEffect(() => {
+        async function assignTrailIds() {
+          if (!geojsonData) return;
+      
+          try {
+            const response = await axios.get(`${API_URL}/auth/all-trails`, { withCredentials: true });
+            const trailsFromDb = response.data;
+      
+            const updatedFeatures = geojsonData.features.map((feature) => {
+              const trailName = feature.properties.Name;
+              const matchedTrail = trailsFromDb.find(dbTrail => dbTrail.name === trailName);
+      
+              if (matchedTrail) {
+                return {
+                  ...feature,
+                  properties: {
+                    ...feature.properties,
+                    trail_id: matchedTrail.id
+                  }
+                };
+              }
+              return feature;
+            });
+      
+            setGeojsonData({ ...geojsonData, features: updatedFeatures });
+      
+          } catch (error) {
+            console.error('Failed to fetch trails from database:', error);
+          }
+        }
+      
+        if (geojsonData) {
+          assignTrailIds();
+        }
+      }, [geojsonData]);
+      
+      
 
     //fetch climate data for the selected trail
     useEffect(() => {
@@ -486,11 +616,38 @@ function Map() {
         }
         return "Unknown length";
     };
+    useEffect(() => {
+        refreshProfileData();
+      }, []);
+      
+      const refreshProfileData = async () => {
+        try {
+          const trailResponse = await axios.post(`${API_URL}/auth/trails`, {}, { withCredentials: true });
+          setTrailData(trailResponse.data || {});
+      
+          const userResponse = await axios.get(`${API_URL}/auth/profile`, { withCredentials: true });
+          setUserData(userResponse.data);
+      
+        } catch (error) {
+          console.error('Failed to refresh profile data:', error);
+        }
+      };
+      
 
     return (
+        //sorry its spaced so bad - grace :)
         <div className='map'>
+         {showAlert && (
+  <div className="custom-alert">
+    {alertMessage}
+  </div>
+)}
+
+
+
+
             <div className='header'>
-                <Clock />
+                <a href='/home'><button id='home'>Home</button></a>
                 <span id="plan">Plan Your Hike</span>
                 <a href='/profile'><button id="account">Account</button></a>
             </div>
@@ -517,20 +674,45 @@ function Map() {
                         {/* Replace the regular dropdown w/ searchable dropdown */}
                         {geojsonData && (
                             <SearchableTrailDropdown 
-                                trails={geojsonData.features}
-                                selectedTrail={selectedTrail}
-                                onTrailSelect={setSelectedTrail}
-                            />
+                            trails={geojsonData.features}
+                            selectedTrail={selectedTrail}
+                            onTrailSelect={handleTrailSelect}
+                          />
+                          
                         )}
                     </div>
-
-                    {/* Trail weather infobox */}
+                    {/* Trail weather infobox (im sorry its indented so poorly forgive me - grace)*/}
                     <div className='trail-weather-box'>
                         {selectedTrail !== null ? (
                             <>
                                 <h3 className='trail-name-header'>{getSelectedTrailName()}</h3>
                                 <div className='weather-data-content'>
                                     <p className='trail-length'>{getSelectedTrailLength()}</p>
+                                    {selectedTrailRatingCount > 0 ? (
+                                    <div className="star-rating-display" style={{ textAlign: 'center', marginTop: '5px' }}>
+                                         {Array.from({ length: 5 }, (_, index) => (
+                                              <span key={index} style={{ fontSize: '24px', color: index < selectedTrailRating ? 'gold' : 'lightgray' }}>
+                                                     ★
+                                                              </span>
+                                                                    ))}           
+                                      <span style={{ marginLeft: '8px', fontSize: '16px', color: 'gray' }}>
+                                      ({selectedTrailRatingCount})
+                                         </span>
+                                                </div>
+                                                    ) : (
+                             <div className="star-rating-display" style={{ textAlign: 'center', marginTop: '5px' }}>
+                                      {Array.from({ length: 5 }, (_, index) => (
+                                      <span key={index} style={{ fontSize: '24px', color: 'lightgray' }}>
+                                               ★
+                                                         </span>
+                                                     ))}
+                             <span style={{ marginLeft: '8px', fontSize: '16px', color: 'gray' }}>
+                                                      (0)
+                                                         </span>
+                                                                        </div>
+                                                    )}          
+
+
                                     
                                     {isLoading ? (
                                         <div className="loading"></div>
@@ -572,9 +754,10 @@ function Map() {
                                         <div>No weather data available for this trail</div>
                                     )}
                                     
-                                    <button className='start-trail-button' onClick={() => handleStartTrail()}>
-                                        Start Trail
-                                    </button>
+                                    <button className='start-trail-button' onClick={handleStartTrail}>
+  Start Trail
+</button>
+
                                 </div>
                             </>
                         ) : (
@@ -624,20 +807,29 @@ function Map() {
                                     };
                                 }}
                                 onEachFeature={(feature, layer) => {
-                                    const featureIndex = geojsonData.features.findIndex(f => f === feature);
                                     layer.on({
-                                        click: () => setSelectedTrail(featureIndex),
-                                        
+                                      click: () => {
+                                        handleTrailClick(feature);
+                                      },
                                     });
-
-                                    const popup = `
-                                    <div>
-                                      <button>Add to Profile</button>
-                                    </div>
-                                  `;
-                            
-                                  layer.bindPopup(popup);
-                                }}
+                                  
+                                  
+                                  
+                                    layer.on('popupopen', () => {
+                                      const starsContainer = document.querySelector('.starRating');
+                                      if (starsContainer) {
+                                        starsContainer.addEventListener('click', (event) => {
+                                          if (!event.target.dataset.value) return;
+                                          const rating = parseInt(event.target.dataset.value);
+                                          const stars = starsContainer.querySelectorAll('span');
+                                          stars.forEach((star, index) => {
+                                            star.textContent = index < rating ? '★' : '☆';
+                                          });
+                                        });
+                                      }
+                                    });
+                                  }}
+                                  
                                 
                             />
                         )}

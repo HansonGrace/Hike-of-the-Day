@@ -52,7 +52,7 @@ This application was built as a **group project** during **CS330 at West Virgini
 - [Alex Loving](https://github.com/alex-loving)
 
 
-## 🖼️ Small-Demo of the Project
-https://youtu.be/ZA0lSyWcj84
+## 🖼️ Screenshots (TO-DO)
+
 
 
