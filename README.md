@@ -34,7 +34,7 @@ A dynamic and interactive web application that helps outdoor enthusiasts explore
 During this project, I spent a majority of my focus on the backend, working with the database, account handling, and more. This was a group project, and during this project I independently created the friend request system, rating system, and completed hike system with the backend. I also aided with front end API work and connecting the front end to the back end.
 
 
-## 🖼️ Demo
+## Demo
 https://youtu.be/ZA0lSyWcj84?si=ltKJZV3LR84ODmHe
 
 
