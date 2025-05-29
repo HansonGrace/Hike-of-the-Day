@@ -17,7 +17,7 @@ function FriendsList() {
     nameVar: '',
     img: null
   })
-  const API_URL = process.env.REACT_APP_BACKEND_API_URL;
+  const API_URL = process.env.REACT_APP_BACKEND_API_URL || 'https://cs330-2025-01-group05-backend-fceefzc8c5gfemc7.eastus2-01.azurewebsites.net';
 
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
@@ -31,22 +31,21 @@ function FriendsList() {
     }, 2500);
   };
 
-  const fetchFriends = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/auth/friends`, {
-        withCredentials: true,
-      });
-      setFriends(response.data);
-    } catch (err) {
-      console.error("Error loading friends list:", err);
-    }
-  };
 
   useEffect(() => {
-    fetchFriends();
-
-    window.addEventListener("friendsUpdated", fetchFriends);
-    return () => window.removeEventListener("friendsUpdated", fetchFriends);
+    const fetchFriends = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/auth/friends`, {
+          withCredentials: true,
+        });
+        setFriends(response.data);
+      } catch (err) {
+        console.error("Error loading friends list:", err);
+      }
+    };
+    
+    window.addEventListener("friendsUpdated", fetchFriends());
+    return () => window.removeEventListener("friendsUpdated", fetchFriends());
   }, [API_URL]);
 
   useEffect(() => {

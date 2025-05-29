@@ -8,7 +8,7 @@ function Profile() {
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_BACKEND_API_URL;
+  const API_URL = process.env.REACT_APP_BACKEND_API_URL; // || 'https://cs330-2025-01-group05-backend-fceefzc8c5gfemc7.eastus2-01.azurewebsites.net';
   const [showRatingPopup, setShowRatingPopup] = useState(false);
   const [selectedTrailId, setSelectedTrailId] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
@@ -42,12 +42,11 @@ function Profile() {
   });
 
   const [completedHikes, setCompletedHikes] = useState([]);
-
-  const trailId = trailData.trail_id;
   const [trailName, setTrailName] = useState('');
 
   useEffect(() => {
     const fetchUserData = async () => {
+      console.log("Trying to fetch user data...");
       try {
         const response = await axios.get(`${API_URL}/auth/profile`, {
           withCredentials: true,
@@ -124,7 +123,7 @@ function Profile() {
     if (trailId) {
       fetchTrailName();
     }
-  }, [API_URL, trailId]);
+  }, [API_URL, trailData.trail_id]);
 
   useEffect(() => {
     const fetchCompletedHikes = async () => {

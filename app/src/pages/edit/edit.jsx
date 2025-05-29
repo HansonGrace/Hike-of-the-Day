@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 function Edit() {
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_BACKEND_API_URL;
+  const API_URL = process.env.REACT_APP_BACKEND_API_URL || 'https://cs330-2025-01-group05-backend-fceefzc8c5gfemc7.eastus2-01.azurewebsites.net';
   const [nameVar, setNameVar] = useState('');
   const [bio, setBio] = useState('');
   const [imageFile, setImageFile] = useState(null);
@@ -36,7 +36,7 @@ function Edit() {
     };
 
     fetchUserData();
-  }, []);
+  }, [API_URL]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];

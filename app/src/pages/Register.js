@@ -17,10 +17,10 @@ const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nameVar, setNameVar] = useState('');
-  const [bio, setBio] = useState('No Bio');
-  const [img, setImg] = useState('/default pfp.jpg');
+  const [bio] = useState('No Bio');
+  const [img] = useState('/default pfp.jpg');
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_BACKEND_API_URL; // Fallback for local development
+  const API_URL = process.env.REACT_APP_BACKEND_API_URL || 'https://cs330-2025-01-group05-backend-fceefzc8c5gfemc7.eastus2-01.azurewebsites.net'; // Fallback for local development
   
   const [alertMessage, setAlertMessage] = useState('');
     const [showAlert, setShowAlert] = useState(false);
@@ -41,6 +41,11 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
+    if (password.length < 8) {
+      triggerAlert("✖️ Password must be at least 8 characters.");
+      return;
+    }
+
     try { 
       const response = await axios.post(
         API_URL + '/auth/register',
@@ -55,6 +60,7 @@ const Register = () => {
         triggerAlert("✖️ Registration failed. Try different username.");
       }
     } catch (error) {
+      console.log(`Attempted to post to ${API_URL}/auth/register`);
       console.error('Registration failed:', error);
       triggerAlert('✖️ Error registering user.');
     }

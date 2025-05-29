@@ -11,3 +11,5 @@ yarn-error.log*
 
 config/.pem
 .vscode/settings.json
+.github/workflows/deploy-azure-static-web-app-frontend.yml
+.github/workflows/deploy-azure-app-service-backend.yml
