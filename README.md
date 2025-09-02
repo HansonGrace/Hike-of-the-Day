@@ -6,11 +6,11 @@ A dynamic and interactive web application that helps outdoor enthusiasts explore
 
 | Category        | Technologies Used                                                           |
 |----------------|----------------------------------------------------------                    | 
-| 🌐 Frontend     | React, HTML, CSS, JavaScript                                                |
-| 🖥️ Backend       | SQL, Azure, Javascript                                                     |
-| ☁️ APIs          | [NOAA Weather API](https://www.weather.gov/documentation/services-web-api) |
-| 🗄️ Database       | SQL & Azure                                                               |
-| 🧪 Methodologies | Agile, SCRUM                                                               |
+|  Frontend     | React, HTML, CSS, JavaScript                                                |
+|  Backend       | SQL, Azure, Javascript                                                     |
+|  APIs          | [NOAA Weather API](https://www.weather.gov/documentation/services-web-api) |
+|  Database       | SQL & Azure                                                               |
+|  Methodologies | Agile, SCRUM                                                               |
 
 ---
 
